@@ -7,6 +7,8 @@
 > Github: [teto-ri](https://github.com/teto-ri)<br>
 ## Project Introduction
 ### CSE_ChatBot
-> Server Setting<br>
+> Dependency Management<br>
+* Server specification : Quad-core ARM A57 @ 1.43 GHz, 8 GB LPDDR4 
+* Server Framework : Ubuntu 20.04 LTS, Python 3.8.10, Flask 2.2.2
 > RSS Conection<br>
 > ChatBot Connection<br>
