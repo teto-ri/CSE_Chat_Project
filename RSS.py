@@ -48,7 +48,7 @@ def Save(Case):
         Contest_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/12278/rssList.do?row=50")
         with open("./Contest_recent.json", 'w') as f:
             f.write(json.dumps(Contest_rss, ensure_ascii=False))
-            
+    
     f.close()
     
 
