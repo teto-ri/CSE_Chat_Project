@@ -11,20 +11,26 @@ from io import BytesIO
 import win32clipboard
 from PIL import Image
 import logging
+import logging.handlers
+
+LOG_MAX_SIZE = 1024 *1024 * 10
+
+LOG_FILE_CNT = 10
+
 
 logger = logging.getLogger(__name__)
 
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('[%(asctime)s - %(name)s - %(levelname)s] :line %(lineno)d - %(message)s')
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
-file_handler = logging.FileHandler('CSE_Chatbot.log')
+file_handler = logging.handlers.RotatingFileHandler('log/CSE_Chatbot.log',maxBytes=LOG_MAX_SIZE, backupCount=LOG_FILE_CNT,encoding='utf-8')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-
 chatnames = ['C:/Users/nuc/project/CSE_Chat_Project/src/PNU_ChatBot.PNG']
+#chatnames = ['C:/Users/nuc/project/CSE_Chat_Project/src/test.PNG']
 
 def sendContent(path):
     image = Image.open(path)
@@ -51,25 +57,50 @@ def send_to_clipboard(clip_type, data):
     win32clipboard.CloseClipboard()
 
 def macroSend(chatname_path, contents):
-    room_btn = pyautogui.locateCenterOnScreen(chatname_path, confidence=0.9)
-    pyautogui.moveTo(room_btn.x, room_btn.y)
-    pyautogui.rightClick()
-    time.sleep(0.5)
-    roomopen_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/chatopen.PNG', confidence=0.9)
-    pyautogui.moveTo(roomopen_btn.x, roomopen_btn.y)
-    pyautogui.doubleClick()
-    time.sleep(1)
-    chat_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/chatblock.PNG', confidence=0.9)
-    pyautogui.moveTo(chat_btn.x, chat_btn.y)
-    pyautogui.doubleClick()
-    pyperclip.copy(contents)
-    pyautogui.hotkey("ctrl","v")
-    time.sleep(1)
-    send_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/send.PNG', confidence=0.9)
-    pyautogui.moveTo(send_btn.x, send_btn.y)
-    pyautogui.doubleClick()
-    logger.info("macroSendMessage")
-    logger.debug(contents)
+    options = Options()
+    options.add_argument("lang=ko_KR")
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-gpu')
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument('--window-size=1280,720')
+    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36')
+    
+    driver = webdriver.Chrome(options=options)
+
+    driver.set_page_load_timeout(10)
+    SendCheck = False
+    for i in range(3):
+        logger.info(f'==try count:[{i+1}]')
+        try:
+            room_btn = pyautogui.locateCenterOnScreen(chatname_path, confidence=0.9)
+            pyautogui.moveTo(room_btn.x, room_btn.y)
+            pyautogui.rightClick()
+            time.sleep(1)
+            roomopen_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/chatopen.PNG', confidence=0.9)
+            pyautogui.moveTo(roomopen_btn.x, roomopen_btn.y)
+            pyautogui.doubleClick()
+            time.sleep(1)
+            chat_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/chatblock.PNG', confidence=0.9)
+            pyautogui.moveTo(chat_btn.x, chat_btn.y)
+            pyautogui.doubleClick()
+            pyperclip.copy(contents)
+            pyautogui.hotkey("ctrl","v")
+            time.sleep(1)
+            send_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/send.PNG', confidence=0.9)
+            pyautogui.moveTo(send_btn.x, send_btn.y)
+            pyautogui.doubleClick()
+            logger.info("macroSendMessage")
+            logger.debug(contents)
+            SendCheck = True
+        except Exception as ex:
+            logger.info(f'Message==try count:[{i+1}] => exception:\n{ex}')
+        if SendCheck == True:
+            break
+        time.sleep(5)
+    if SendCheck == False:
+        logger.error("failSendMessage")
+        raise AirflowException('retry gogo!')
 
 def closeChat():
     close_btn = pyautogui.locateCenterOnScreen('C:/Users/nuc/project/CSE_Chat_Project/src/close.PNG')
@@ -93,7 +124,7 @@ def screenshot(URL,Type):
 
     crawling_success = False
     for i in range(5):
-        logger.info(f'==try count:[{i+1}]')
+        logger.info(f'ScreenShot==try count:[{i+1}]')
         try:
             driver.get(url=URL)
             crawling_success = True
@@ -134,7 +165,7 @@ def Load(Case):
 
 def Save(Case):
     if Case == "Notice" :
-        Notice_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2605/rssList.do?row=5")
+        Notice_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2605/rssList.do?row=3")
         if Notice_rss.bozo:
             raise Exception(f"{Case} parse error") 
         else:
@@ -142,7 +173,7 @@ def Save(Case):
                 f.write(json.dumps(Notice_rss, ensure_ascii=False))
     
     elif Case == "Free" :
-        Free_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2618/rssList.do?row=5")
+        Free_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2618/rssList.do?row=3")
         if Free_rss.bozo:
             raise Exception(f"{Case} parse error") 
         else:
@@ -150,7 +181,7 @@ def Save(Case):
                 f.write(json.dumps(Free_rss, ensure_ascii=False))
     
     elif Case == "Employment" :
-        Employment_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2616/rssList.do?row=5")
+        Employment_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2616/rssList.do?row=3")
         if Employment_rss.bozo:
             raise Exception(f"{Case} parse error") 
         else:
@@ -159,7 +190,7 @@ def Save(Case):
             
     
     elif Case == "Contest":
-        Contest_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/12278/rssList.do?row=5")
+        Contest_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/12278/rssList.do?row=3")
         if Contest_rss.bozo:
             raise Exception(f"{Case} parse error") 
         else:
@@ -167,7 +198,7 @@ def Save(Case):
                 f.write(json.dumps(Contest_rss, ensure_ascii=False))
     
     else:
-        Others_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2617/rssList.do?row=5")
+        Others_rss = feedparser.parse("https://cse.pusan.ac.kr/bbs/cse/2617/rssList.do?row=3")
         if Others_rss.bozo:
             raise Exception(f"{Case} parse error") 
         else:
@@ -201,7 +232,7 @@ except:
     
 Notice_present_state = Notice_rss["entries"][0]
 Free_present_state = Free_rss["entries"][0]
-Employment_present_state = Employment_rss["entries"][1]
+Employment_present_state = Employment_rss["entries"][0]
 Contest_present_state = Contest_rss["entries"][0]
 Others_present_state = Others_rss["entries"][0]
 
