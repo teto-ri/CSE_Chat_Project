@@ -17,7 +17,7 @@
 ### CSE_ChatBot 
 > Dependency Management<br>
 * Server specification : Quad-core ARM A57 @ 1.43 GHz, 2 GB LPDDR3 
-* Server Framework : Ubuntu 20.04 LTS, Python 3.8.10, Flask 2.2.2
+* Server Framework : Ubuntu 20.04 LTS, Python 3.8.10
 > RSS Connection<br>
 + 부산대학교 정보컴퓨터공학부 공지사항 RSS<br>
   + https://cse.pusan.ac.kr/bbs/cse/2605/rssList.do?row=50
